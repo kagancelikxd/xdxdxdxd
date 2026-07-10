@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Telegram Görev Yöneticisi</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f7f6; margin: 20px; color: #333; }
+        .container { max-width: 800px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin: auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 16px; }
+        .btn-start { background: #2ecc71; }
+        .btn-stop { background: #e74c3c; margin-left: 10px; }
+        #logBox { background: #2c3e50; color: #2ecc71; padding: 15px; height: 250px; overflow-y: scroll; font-family: monospace; border-radius: 4px; margin-top: 20px; }
+        .status { font-weight: bold; margin-bottom: 20px; padding: 10px; border-radius: 4px; }
+        .status.active { background: #d4edda; color: #155724; }
+        .status.inactive { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Telegram Görev Yönetim Paneli</h2>
+    <div id="statusIndicator" class="status inactive">Durum: Çalışmıyor</div>
+
+    <div class="form-group">
+        <label>Bot Token:</label>
+        <input type="text" id="token" placeholder="123456789:ABCdefGhI...">
+    </div>
+    <div class="form-group">
+        <label>Chat ID'ler (Virgülle ayırın):</label>
+        <input type="text" id="chats" placeholder="-100123456789, -100987654321">
+    </div>
+    <div class="form-group">
+        <label>Mesaj (Satır başı yeni mesaj - Çoklu Destek):</label>
+        <textarea id="messages" rows="4" placeholder="İlk mesaj&#10;İkinci mesaj"></textarea>
+    </div>
+    <div class="form-group">
+        <label>Gecikme Süresi (Saniye):</label>
+        <input type="number" id="delay" value="5" min="1">
+    </div>
+
+    <button class="btn-start" onclick="startSystem()">Sistemi Başlat (/start)</button>
+    <button class="btn-stop" onclick="stopSystem()">Durdur (/stop)</button>
+
+    <h3>Canlı Günlük Kayıtları (/logs)</h3>
+    <div id="logBox"></div>
+</div>
+
+<script>
+    async function startSystem() {
+        const payload = {
+            token: document.getElementById('token').value,
+            chats: document.getElementById('chats').value,
+            messages: document.getElementById('messages').value.split('\n'),
+            delay: document.getElementById('delay').value
+        };
+
+        const res = await fetch('/api/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if(!data.success) alert('Hata: ' + data.error);
+    }
+
+    async function stopSystem() {
+        await fetch('/api/stop', { method: 'POST' });
+    }
+
+    // Her saniye logları ve sunucu durumunu çeken polling mekanizması (Web paneli için)
+    setInterval(async () => {
+        try {
+            const res = await fetch('/api/logs');
+            const data = await res.json();
+            
+            const logBox = document.getElementById('logBox');
+            logBox.innerHTML = data.logs.join('<br>');
+            logBox.scrollTop = logBox.scrollHeight; // Otomatik aşağı kaydır
+
+            const status = document.getElementById('statusIndicator');
+            if (data.isRunning) {
+                status.innerText = "Durum: Aktif Çalışıyor";
+                status.className = "status active";
+            } else {
+                status.innerText = "Durum: Durduruldu / Pasif";
+                status.className = "status inactive";
+            }
+        } catch (e) {}
+    }, 1000);
+</script>
+</body>
+  </html>
