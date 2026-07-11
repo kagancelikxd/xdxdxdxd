@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Telegram Bot Panel</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #111;
+    color: white;
+    padding: 20px;
+}
+
+input, textarea {
+    width: 100%;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+}
+
+button {
+    padding: 10px;
+    margin: 5px 5px 5px 0;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+.log {
+    background: black;
+    padding: 10px;
+    height: 200px;
+    overflow-y: auto;
+    font-size: 13px;
+    border-radius: 5px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h2>📱 Telegram Bot Panel</h2>
+
+<input id="token" placeholder="Bot Token">
+<input id="chatId" placeholder="Chat ID">
+
+<textarea id="messages" placeholder="Mesajlar (satır satır veya virgül ile)"></textarea>
+
+<input id="delay" type="number" value="3" placeholder="Delay (saniye)">
+
+<button onclick="startBot()">▶ Start</button>
+<button onclick="stopBot()">⛔ Stop</button>
+
+<h3>📊 Log</h3>
+<div class="log" id="logBox"></div>
+
+<script>
+
+async function startBot() {
+    await fetch("/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            token: document.getElementById("token").value,
+            chatId: document.getElementById("chatId").value,
+            messages: document.getElementById("messages").value,
+            delay: document.getElementById("delay").value
+        })
+    });
+}
+
+async function stopBot() {
+    await fetch("/stop", { method: "POST" });
+}
+
+async function loadLogs() {
+    try {
+        const res = await fetch("/logs");
+        const data = await res.json();
+
+        document.getElementById("logBox").innerHTML =
+            data.map(l => `<div>${l}</div>`).join("");
+    } catch (e) {}
+}
+
+setInterval(loadLogs, 2000);
+
+</script>
+
+</body>
+</html>
